@@ -1,6 +1,6 @@
 #![allow(warnings)]
 
-use std::io;
+use std::{collections::HashMap, io};
 
 fn main() {
     
@@ -16,7 +16,7 @@ fn main() {
     ;
     
     
-    // solve
+    // solve 1
     A.sort();
     B.sort();
     
@@ -26,6 +26,19 @@ fn main() {
     }
     
     
+    // solve 2
+    let mut cnts: HashMap<usize, usize> = HashMap::new();
+    for &b in B.iter() {
+        *cnts.entry(b).or_insert(0) += 1;
+    }
+    let mut res2: usize = 0;
+    for &a in A.iter() {
+        if let Some(&cnt) = cnts.get(&a) {
+            res2 += cnt * a;
+        }
+    }
+    
     // print
-    println!("res: {}", res);
+    println!("part1: {}", res);
+    println!("part2: {}", res2);
 }
