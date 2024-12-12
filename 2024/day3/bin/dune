@@ -1,0 +1,5 @@
+(executable
+ (public_name day3)
+ (name main)
+ (preprocess (pps ppx_deriving.std))
+ (libraries day3 str ppx_deriving.std re))
