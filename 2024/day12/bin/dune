@@ -1,0 +1,6 @@
+(executable
+ (public_name day12)
+ (name main)
+ (preprocess (pps ppx_deriving.std))
+ (flags (:standard -w -32 -w -27 -w -26))
+ (libraries day12 ppx_deriving.std))
