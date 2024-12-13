@@ -20,8 +20,6 @@ let sum = List.fold_left (+) 0
 let part1 (input: letter array array): int = 
   let height = Array.length input in
   let width = Array.length input.(0) in
-  let rec loop x = x :: loop x in
-  let _ = try loop 42 with Stack_overflow -> [] in
   let locCount i j =
     [
       (try if input.(i+0).(j) = X && input.(i+1).(j) = M && input.(i+2).(j) = A && input.(i+3).(j) = S then 1 else 0 with Invalid_argument _ -> 0);
@@ -43,8 +41,6 @@ let part1 (input: letter array array): int =
 let part2 (input: letter array array): int = 
   let height = Array.length input in
   let width = Array.length input.(0) in
-  let rec loop x = x :: loop x in
-  let _ = try loop 42 with Stack_overflow -> [] in
   let locCount i j =
     [
       (try if 
