@@ -1,3 +1,5 @@
+// search for easter egg: gcc main.c -o main && ./main > egg_search.txt
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -68,7 +70,6 @@ int solve(struct robot* prob, int num_bots, int width, int height, int num_ticks
     int qBR = 0;
     int xMid = (width / 2);
     int yMid = (height / 2);
-    printf("mids are (%d, %d)\n", xMid, yMid);
     
     int* counts = calloc(sizeof(int), width * height);
     
@@ -103,6 +104,63 @@ int solve(struct robot* prob, int num_bots, int width, int height, int num_ticks
     return qTL * qTR * qBL * qBR;
 }
 
+int solve2(struct robot* prob, int num_bots, int width, int height, int num_ticks) {
+    int qTL = 0;
+    int qTR = 0;
+    int qBL = 0;
+    int qBR = 0;
+    int xMid = (width / 2);
+    int yMid = (height / 2);
+    
+    int* counts = calloc(sizeof(int), width * height);
+    
+    for (int bot_id = 0; bot_id < num_bots; bot_id++) {
+        struct robot* bot = &prob[bot_id];
+        int xFina = ((bot->xInit + (bot->xVelo * num_ticks)) % width + width) % width;
+        int yFina = ((bot->yInit + (bot->yVelo * num_ticks)) % height + height) % height;
+        
+        counts[yFina * width + xFina] += 1;
+        
+        qBL += (xFina < xMid && yFina > yMid);
+        qBR += (xFina > xMid && yFina > yMid);
+        qTL += (xFina < xMid && yFina < yMid);
+        qTR += (xFina > xMid && yFina < yMid);
+    }
+        
+    // xmas tree search...
+    int max_consec_curr = 0;
+    int max_consec = 0;
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) { 
+            if (counts[i * width + j] > 0 && counts[i * width + j + 1] > 0) {
+                max_consec_curr += 1;
+                if (max_consec_curr > max_consec) {
+                    max_consec = max_consec_curr;
+                }
+            } else {
+                max_consec_curr = 0;
+            }
+        }
+    }
+    
+    if (max_consec > 10) {
+        printf("========== step %d ==========", num_ticks);
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) { 
+                if (counts[i * width + j] == 0) {
+                    printf(" ");
+                } else {
+                    printf("▦");
+                }
+            }
+            printf("\n");
+        }
+
+    }
+    
+    return qTL * qTR * qBL * qBR;
+}
+
 int main() {
     
     {
@@ -123,6 +181,16 @@ int main() {
         int sol = solve(prob, num_bots, 101, 103, 100);
         
         printf("solution: %d\n", sol);
+    }
+
+    {
+        printf("=== p2 real ===\n");
+        char* input_text = read("input.txt");
+        int num_bots;
+        struct robot* prob = parse(input_text, &num_bots);
+        for (int i = 0; i < 10000; i++) {
+            solve2(prob, num_bots, 101, 103, i);
+        }
     }
     
     return 0;

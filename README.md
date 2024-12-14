@@ -9,7 +9,7 @@
 | **1**  | 🦀 Rust    | ⭐⭐    | **11** | 🐍 Python | ⭐⭐    | **21** |          |       |
 | **2**  | 🐪 OCaml   | ⭐⭐    | **12** | 🐪 OCaml  | ⭐⭐    | **22** |          |       |
 | **3**  | 🐪 OCaml   | ⭐⭐    | **13** | 🐍 Python | ⭐⭐    | **23** |          |       |
-| **4**  | 🐪 OCaml   | ⭐⭐    | **14** |           |       | **24** |          |       |
+| **4**  | 🐪 OCaml   | ⭐⭐    | **14** | 💣 C      | ⭐⭐    | **24** |          |       |
 | **5**  | 🐹 Go      | ⭐     | **15** |           |       | **25** |          |       |
 | **6**  |             |       | **16** |           |       |        |          |       |
 | **7**  |        |       | **17** |           |       |        |          |       |
@@ -29,10 +29,14 @@
 	- create: `mkdir day05`, `cd day05`, `go mod init main`
 	- `go run main`
 - Python
-	- just create a `.py`
+	- just create a `main.py`
 	- `python main.py`
+- Haskell
+	- make a `main.hs`
+	- `ghc main.hs && ./main`
 - Typst
-	- just create a `.typ`
+	- just create a `main.typ`
 	- `typst compile main.typ`
-
-
+- C
+  - just create a `main.c`
+  - `gcc main.c -o main && ./main`
