@@ -1,6 +1,12 @@
-// recursive solution blows up recursion depth... oops
-// also infinite loop detection thinks we're infinitely looping... oops^2
-// you'll need to build the typst compiler from source with higher MAX_CALL_DEPTH, MAX_ITERATIONS
+= Day 9 hehe
+
+No idea why I'm doing this in Typst except it works
+#footnote[Recursive solution blows up recursion depth... $sans("oops")$]
+#footnote[Also infinite loop detection thinks we're infinitely looping... $sans("oops")$^2]
+#footnote[You'll need to build the typst compiler from source with higher `MAX_CALL_DEPTH`, `MAX_ITERATIONS`]
+...
+
+*Solution:*
 
 #let parse(input_text) = {
   let orig = input_text.split("").filter(x => x != "").map(x => int(x))
