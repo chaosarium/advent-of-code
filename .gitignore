@@ -5,3 +5,6 @@
 **/_build
 .zed
 2024/day09/main.pdf
+**/main
+**/main.hi
+**/main.o
