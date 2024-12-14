@@ -19,6 +19,7 @@ printMat :: forall a. Show a => [[a]] -> IO ()
 printMat = mapM_ print
 
 -- ways to get to peak... turns out to not be what the question's asking oops
+-- WAIT never mind this actually solves part 2? good thing we didn't delete the code :)
 countTrailsWays :: [[Int]] -> Int -> [[Int]] -> [[Int]]
 countTrailsWays topography base ascension = 
     let height = length topography in
@@ -37,7 +38,7 @@ countTrailsWays topography base ascension =
         )
     )
 
--- actually find the scores
+-- part 1
 collectTrails :: [[Int]] -> Int -> [[Set (Int, Int)]] -> [[Set (Int, Int)]]
 collectTrails topography base ascension = 
     let height = length topography in
@@ -69,10 +70,10 @@ nestedEnumMap :: ((Int, Int, a) -> b) -> [[a]] -> [[b]]
 nestedEnumMap f l = map (\(i, row) -> map (\(j, elem) -> f (i, j, elem)) (zip [0..] row) ) (zip [0..] l)
 
 -- peak = peak height
-solve0 :: [[Int]] -> Int -> Int -> [[Int]]
-solve0 topography peak elevation = 
+solve2 :: [[Int]] -> Int -> Int -> [[Int]]
+solve2 topography peak elevation = 
     if peak == elevation then nestedMap (\x -> if x == 9 then 1 else 0) topography
-    else let ascension = solve0 topography peak (elevation+1) in 
+    else let ascension = solve2 topography peak (elevation+1) in 
     countTrailsWays topography elevation ascension
 
 solve1 :: [[Int]] -> Int -> Int -> [[Set (Int, Int)]]
@@ -85,12 +86,14 @@ main :: IO ()
 main = do
     p1_test_input <- readInput "test.txt"
     let topography = parseInput p1_test_input
-    let level0 = solve1 topography 9 0
     print "p1_test_input:"
-    print (sum (concat (nestedMap Set.size level0)))
+    print (sum (concat (nestedMap Set.size (solve1 topography 9 0))))
+    print "p2_test_input:"
+    print (sum (concat (solve2 topography 9 0)))
 
     p1_real_input <- readInput "input.txt"
     let topography = parseInput p1_real_input
-    let level0 = solve1 topography 9 0
     print "p1_real_input:"
-    print (sum (concat (nestedMap Set.size level0)))
+    print (sum (concat (nestedMap Set.size (solve1 topography 9 0))))
+    print "p2_real_input:"
+    print (sum (concat (solve2 topography 9 0)))
