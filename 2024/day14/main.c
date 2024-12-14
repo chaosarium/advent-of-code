@@ -150,7 +150,7 @@ int solve2(struct robot* prob, int num_bots, int width, int height, int num_tick
                 if (counts[i * width + j] == 0) {
                     printf(" ");
                 } else {
-                    printf("▦");
+                    printf("▮");
                 }
             }
             printf("\n");
