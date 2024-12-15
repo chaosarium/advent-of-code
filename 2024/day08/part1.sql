@@ -1,4 +1,4 @@
--- run duckdb -c ".read main.sql"
+-- run duckdb -c ".read part1.sql"
 
 with lines as (
     -- set file to `test.txt` or `input.txt`
@@ -49,6 +49,8 @@ distinct_antinodes as (
 select 
 *
 from distinct_antinodes
+
+
 
 ;
 
