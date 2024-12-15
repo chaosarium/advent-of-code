@@ -3,9 +3,10 @@
 -- but does it materialize the whole array upon need or just the individual cells needed?
 -- meh whatever ╮(￣▽￣)╭
 
+-- wait it's boxes that we're pushing around? i thought we're pushing lanternfish
+-- ehh whatever what's the difference between boxes and lanternfish anyway
+
 import System.IO (readFile)
-import Data.Set (Set)
-import qualified Data.Set as Set
 import Data.List
 import Data.Array
 
@@ -31,7 +32,7 @@ breakBySubstr' sep s prefix = if isPrefixOf sep s then
 breakBySubstr :: [Char] -> [Char] -> [[Char]]
 breakBySubstr sep s = breakBySubstr' sep s []
 
-data Object = Empty | Wall | Lanternfish | Submarine    deriving (Show, Eq)
+data Object = Empty | Wall | Lanternfish | Submarine | Open | Close    deriving (Show, Eq)
 data Direction = U | D | L | R    deriving (Show, Eq)
 type Map = Array (Int, Int) Object
 type Coord = (Int, Int)
@@ -39,8 +40,8 @@ type Coord = (Int, Int)
 parseMap :: String -> Map
 parseMap map_string = 
     let lines = splitBy '\n' map_string |> filter (\line -> line /= []) in
-    let height = length lines - 1 in
-    let width = length (head lines) - 1 in
+    let height = length lines in
+    let width = length (head lines) in
     map (\cs -> map (\c -> case c of 
             '.' -> Empty
             '#' -> Wall
@@ -48,8 +49,23 @@ parseMap map_string =
             '@' -> Submarine
         ) cs) lines
     |> concat
-    |> listArray ((0, 0), (height, width))
+    |> listArray ((0, 0), (height  - 1 , width - 1))
     
+-- part 2
+parseMap2 :: String -> Map
+parseMap2 map_string = 
+    let lines = splitBy '\n' map_string |> filter (\line -> line /= []) in
+    let height = length lines in
+    let width = 2 * (length (head lines)) in
+    map (\cs -> map (\c -> case c of 
+            '.' -> [Empty, Empty]
+            '#' -> [Wall, Wall]
+            'O' -> [Open, Close]
+            '@' -> [Submarine, Empty]
+        ) cs |> concat) lines
+    |> concat
+    |> listArray ((0, 0), (height - 1, width - 1))
+
 
 parseControl :: String -> [Direction]
 parseControl control_string = filter (\c -> c /= '\n') control_string
@@ -90,17 +106,31 @@ tryMove m c@(i, j) d =
         Wall -> Nothing
         Lanternfish -> (tryMove m target_coord d) >>= (\m' -> Just (makeMove m' c d))
 
-executeMoves :: Map -> Coord -> [Direction] -> Map
-executeMoves m c directions =
+-- part 2
+tryMove2 :: Map -> Coord -> Direction -> Maybe Map
+tryMove2 m c@(i, j) d =
+    let target_coord = movedCoord c d in
+    case (d, m ! target_coord) of
+        (_, Empty) -> Just (makeMove m c d)
+        (_, Wall) -> Nothing
+        (d, target_cell) | ((d == L || d == R) && (target_cell == Open || target_cell == Close)) -> 
+            (tryMove2 m target_coord d) >>= (\m' -> Just (makeMove m' c d))
+        (d, target_cell) | ((d == U || d == D) && (target_cell == Open || target_cell == Close)) -> 
+            let matched_paren_side = if target_cell == Open then R else L in
+            let close_coord = movedCoord target_coord matched_paren_side in
+            (tryMove2 m target_coord d) >>= (\m' -> tryMove2 m' close_coord d) >>= (\m'' -> Just (makeMove m'' c d))
+
+executeMoves :: (Map -> Coord -> Direction -> Maybe Map) -> Map -> Coord -> [Direction] -> Map
+executeMoves movetryer m c directions =
     case directions of 
         [] -> m
         d:ds -> 
-            let movedopt = tryMove m c d in
+            let movedopt = movetryer m c d in
             let (m', c') = case movedopt of 
                     Nothing -> (m, c)
                     Just m' -> (m', movedCoord c d)
             in
-                executeMoves m' c' ds 
+                executeMoves movetryer m' c' ds 
 
 gpsCoord :: Coord -> Int
 gpsCoord (i, j) = i* 100 + j
@@ -112,6 +142,7 @@ fishCoords m =
     let es = elems m in
     zip is es |> filter (\((i, j), e) -> case e of 
         Lanternfish -> True 
+        Open -> True 
         _ -> False
     ) 
     |> map fst
@@ -141,10 +172,26 @@ part1 file_name = do
     let controls = parseControl control_str
     let init_submarine_coord = findSubmarine m
     print ("part1 " ++ file_name ++ ":")
-    print (executeMoves m init_submarine_coord controls |> fishCoords)
+    print (executeMoves tryMove m init_submarine_coord controls |> fishCoords)
+
+part2 :: String -> IO ()
+part2 file_name = do
+    input_str <- readInput file_name
+    let map_str:control_str:[] = (breakBySubstr "\n\n" input_str)
+    let m = parseMap2 map_str
+    let controls = parseControl control_str
+    let init_submarine_coord = findSubmarine m
+    let m_final = executeMoves tryMove2 m init_submarine_coord controls
+    print ("part2 " ++ file_name ++ ":")
+    print (m_final |> fishCoords)
 
 main :: IO ()
 main = do
     part1 "test.txt"
     part1 "test2.txt"
     part1 "input.txt"
+    
+    part2 "p2test1.txt"
+    part2 "test.txt"
+    part2 "test2.txt"
+    part2 "input.txt"
