@@ -8,7 +8,8 @@ import (
 	"io"
 	"os"
 	"strconv"
-	"strings" 
+	"strings"
+
 )
 
 type rule struct {
@@ -96,7 +97,18 @@ func isSubsetOf(A map[int]unit, B map[int]unit) bool {
 	return true
 }
 
-func compute(prob Problem) int {
+func setMinus(A map[int]unit, B map[int]unit) map[int]unit {
+	difference := make(map[int]unit)
+	for k, _ := range A {
+		_, inB := B[k]
+		if !inB {
+			difference[k] = unit{}
+		}
+	}
+	return difference
+}
+
+func compute(prob Problem) (int, int) {
 	
 	// make graph
 	
@@ -116,8 +128,8 @@ func compute(prob Problem) int {
 	
 	// fmt.Printf("graph:\n%+v\n", g)
 		
-	acc := 0
-	Outer:
+	part1acc := 0
+	part2acc := 0
 	for _, update := range prob.updates {
 		
 		// set of updated pages
@@ -135,24 +147,46 @@ func compute(prob Problem) int {
 			reach(g, root, &updated, page2dependencies[root])
 		}
 
-		// check updates
-
 		satisfied := make(map[int]unit)
-		for _, x := range update {
-
-			if page2dependencies[x] != nil && !isSubsetOf(page2dependencies[x], satisfied) {
-				continue Outer
+		wellOrderedAsIs := true // for part 2, whether original ordering is good
+		for i, x := range update {
+			dependencies := page2dependencies[x]
+			if page2dependencies[x] != nil && !isSubsetOf(dependencies, satisfied) {
+				wellOrderedAsIs = false // ordering is bad...
+				
+				// greedily fix ordering? (part 2)
+				missingDependencies := setMinus(dependencies, satisfied)
+				j := i+1
+				for j < len(update) {
+					_, inDifference := missingDependencies[update[j]]
+					if inDifference && isSubsetOf(page2dependencies[update[j]], satisfied) {
+						break
+					}
+					j++ 
+				}
+				tmp := update[i]
+				update[i] = update[j]
+				update[j] = tmp
 			}
-			
-			satisfied[x] = unit{}			
+			satisfied[update[i]] = unit{}			
 		}
-		acc += update[len(update) / 2]
+		if wellOrderedAsIs {
+			part1acc += update[len(update) / 2]
+		} else {
+			part2acc += update[len(update) / 2]	
+		}
+		
 	}
 	
-	return acc
+	return part1acc, part2acc
 }
 
 func main() {
-	fmt.Printf("p1 test: %d\n", compute(parse("test.txt")))
-	fmt.Printf("p1 real: %d\n", compute(parse("input.txt")))
+	p1, p2 := compute(parse("test.txt"))
+	fmt.Printf("test p1: %d\n", p1)
+	fmt.Printf("test p2: %d\n", p2)
+
+	p1, p2 = compute(parse("input.txt"))
+	fmt.Printf("real p1: %d\n", p1)
+	fmt.Printf("real p2: %d\n", p2)	
 }
