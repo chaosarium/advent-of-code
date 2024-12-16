@@ -17,24 +17,47 @@ function locateGuard(grid: string[][]): [number, number] {
   throw Error
 }
 
-function trace(grid: string[][], coordInit: [number, number]) {
+interface answer {
+  looping: boolean,
+  uniques: number,
+  part2answer: number,
+}
+function trace(grid: string[][], coordInit: [number, number], doPart2: boolean): answer {
   var i = coordInit[0]
   var j = coordInit[1]
-  var dir = 'N'
-  var visited = new Set()
-  
+  var dir: "N" | "S" | "W" | "E" = 'N'
   const height = grid.length
   const width = grid[0].length
-  
+  var part2answer = 0
+
+  function intoKey(i: number, j: number): number {
+    return (i * width + j)
+  }  
+  function outofKey(k: number): [number, number] {
+    return [(k - k % width) / width, k % width]
+  }
+  function intoDirectedKey(i: number, j: number, dir: "N" | "S" | "W" | "E"): number {
+    let base = intoKey(i, j) * 4
+    if (dir === 'N') { return base + 0 }
+    else if (dir === 'S') { return base + 1 }
+    else if (dir === 'W') { return base + 2 }
+    else if (dir === 'E') { return base + 3 }
+    else { throw Error }
+  }  
   function inGrid(i: number, j: number): boolean {
     return 0 <= i && i < height && 0 <= j && j < width
   }
   function isBlocking(i: number, j: number): boolean {
     return grid[i][j] === '#'
   }
+
+  var visited: Set<number> = new Set()
+  var directedVisited = new Set()
+  var isLooping = false
   
   while (true) {
     visited.add(i * width + j)
+    directedVisited.add(intoDirectedKey(i, j, dir))
     var iNew = i
     var jNew = j
     if (dir === 'N') { iNew = i - 1 }
@@ -54,18 +77,44 @@ function trace(grid: string[][], coordInit: [number, number]) {
       else if (dir === 'W') { dir = 'N' }
       else if (dir === 'E') { dir = 'S' }
     }
+    
+    if (directedVisited.has(intoDirectedKey(i, j, dir))) {
+      return {
+        uniques: visited.size, 
+        looping: true,
+        part2answer: part2answer,
+      }
+    }
   }
   
-  return visited.size
+  // brute force part 2 cuz javascript is too annoying
+  if (doPart2) {
+    visited.forEach((k) => { 
+      let [i, j] = outofKey(k)
+      if (grid[i][j] === '.') {      
+        grid[i][j] = '#'
+        if (trace(grid, coordInit, false).looping) {
+          part2answer += 1
+        }
+        grid[i][j] = '.'
+      }
+    })
+  }
+  
+  return {
+    uniques: visited.size,
+    looping: false,
+    part2answer: part2answer,
+  }
 }
 
-function part1(input_file: string) {
+function solve(input_file: string) {
   const input_text = fs.readFileSync(input_file, 'utf8')
   const grid = parse(input_text)
   const coordInit = locateGuard(grid)
-  const solution = trace(grid, coordInit)
+  const solution = trace(grid, coordInit, true)
   console.log("part1", input_file, "solution:", solution)
 }
 
-part1('test.txt')
-part1('input.txt')
+solve('test.txt')
+solve('input.txt')
