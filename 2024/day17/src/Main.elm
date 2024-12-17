@@ -19,11 +19,13 @@ main =
 type alias Model =
   { 
     input : String,
-    output : String
+    output1 : String,
+    output2 : String,
+    trace : List ProgramState
   }
 
 init : Model 
-init = { input = "", output = "" }
+init = { input = "", output1 = "", output2 = "", trace = []}
 
 type Instr = Adv | Bxl | Bst | Jnz | Bxc | Out | Bdv | Cdv | Noop
 
@@ -104,13 +106,16 @@ stepProgram state =
         Cdv -> Just { state | counter = state.counter + 2, c = (state.a // (2 ^ comboOperand operand state))}
     _ -> Nothing
 
-computePart1 : ProgramState -> List Int
+computePart1 : ProgramState -> (List Int, List ProgramState)
 computePart1 state = case stepProgram state of 
-  Nothing -> List.reverse state.console
+  Nothing -> (List.reverse state.console, [state])
   Just stateNew -> 
     let
       _ = Debug.log "|->" stateNew
-    in computePart1 stateNew
+      (console, states) = computePart1 stateNew
+    in 
+      (console, state :: states)
+
 
 type Msg 
   = SolvePart1 
@@ -125,22 +130,59 @@ update msg model =
       let 
         program = parseInput model.input
         _ = Debug.log "program" program
-        consoleOutput = Debug.log "program |->*" (computePart1 (Unwrap.result program))
+        (consoleOutput, trace) = Debug.log "program |->*" (computePart1 (Unwrap.result program))
       in
-        { model | output = String.join "," (List.map String.fromInt consoleOutput) }
-    SolvePart2 -> { model | output = "part 2 solution" }
+        { model | output1 = String.join "," (List.map String.fromInt consoleOutput), trace = trace }
+    SolvePart2 -> { model | output2 = "part 2 solution not implemented" }
+
+renderTrace : List ProgramState -> Html msg
+renderTrace progStates = 
+  let 
+    renderRow state = tr [] [
+        td [] [ text (String.fromInt state.a) ],
+        td [] [ text (String.fromInt state.b) ],
+        td [] [ text (String.fromInt state.c) ],
+        td [] (
+            List.indexedMap (\i -> \x ->
+                let
+                  opcode = x |> literalOperand 
+                  inner = span [] [ text (String.fromInt opcode ++ " ")]
+                  content = if i == state.counter then strong [ style "color" "red" ] [inner] else inner
+                in content
+              ) (Array.toList state.instrs)
+          )
+      ]
+    rows = progStates |> List.map renderRow
+    tableHead = tr [] [
+        th [] [text "Reg A"],
+        th [] [text "Reg B"],
+        th [] [text "Reg C"],
+        th [] [text "Program"]
+      ] 
+  in
+    tableHead :: rows |> table []
 
 view : Model -> Html Msg
 view model =
   div []
     [
       div [] [
-        textarea [ onInput Input, value model.input, cols 60, rows 10, placeholder "paste input here" ] [  ]
+        textarea [ onInput Input, value model.input, cols 40, rows 6, placeholder "paste input here" ] [  ]
       ],
       button [ onClick SolvePart1 ] [ text "compute part 1" ],
       button [ onClick SolvePart2 ] [ text "compute part 2" ],
       br [] [],
-      div [] [
-        textarea [ disabled True, value model.output, cols 60, rows 10, placeholder "nothing computed yet" ] []
+      div [ style "margin-top" "10px" ] [
+        text "part 1 output:",
+        br [] [],
+        textarea [ disabled True, value model.output1, cols 40, rows 3, placeholder "nothing computed yet" ] []
+      ],
+      div [ style "margin-top" "10px" ] [
+        text "part 2 output:",
+        br [] [],
+        textarea [ disabled True, value model.output2, cols 40, rows 3, placeholder "nothing computed yet" ] []
+      ],
+      div [ style "margin-top" "10px" ] [
+        renderTrace model.trace
       ]
     ]
