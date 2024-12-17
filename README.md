@@ -12,10 +12,10 @@
 | **4**  | 🐪 OCaml      | ⭐⭐    | **14** | 💣 C       | ⭐⭐    | **24** |          |       |
 | **5**  | 🐹 Go         | ⭐⭐    | **15** | 🦥 Haskell | ⭐⭐    | **25** |          |       |
 | **6**  | 🦕 TypeScript | ⭐⭐    | **16** | 🐍 Python  | ⭐⭐    |        |          |       |
-| **7**  | 🐪 OCaml      | ⭐⭐    | **17** |            |       |        |          |       |
-| **8**  | 🦆 SQL        | ⭐⭐    | **18** |            |       |        |          |       |
-| **9**  | 📄 Typst      | ⭐⭐    | **19** |            |       |        |          |       |
-| **10** | 🦥 Haskell    | ⭐⭐    | **20** |            |       |        |          |       |
+| **7**  | 🐪 OCaml      | ⭐⭐    | **17** | 🌳 Elm     | ⭐      |        |          |       |
+| **8**  | 🦆 SQL        | ⭐⭐    | **18** |            |         |        |          |       |
+| **9**  | 📄 Typst      | ⭐⭐    | **19** |            |         |        |          |       |
+| **10** | 🦥 Haskell    | ⭐⭐    | **20** |            |         |        |          |       |
 
 ## Useful Commands
 
@@ -46,7 +46,9 @@
 - TypeScript
   - make `main.ts`
   - run `deno --allow-read main.ts`
-
+- Elm
+  - `mkdir day17`, `cd day17`, `elm init`
+  - `open http://localhost:2024/Main.elm && elm reactor --port 2024`
 
 ## Language Backlog...
 
