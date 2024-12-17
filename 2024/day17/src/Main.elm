@@ -136,7 +136,7 @@ update msg model =
     SolvePart2 -> { model | output2 = "part 2 solution not implemented" }
 
 renderTrace : List ProgramState -> Html msg
-renderTrace progStates = 
+renderTrace states = 
   let 
     renderRow state = tr [] [
         td [] [ text (String.fromInt state.a) ],
@@ -147,16 +147,19 @@ renderTrace progStates =
                 let
                   opcode = x |> literalOperand 
                   inner = span [] [ text (String.fromInt opcode ++ " ")]
-                  content = if i == state.counter then strong [ style "color" "red" ] [inner] else inner
+                  content = 
+                    if i == state.counter 
+                    then strong [ style "color" "red" ] [inner] 
+                    else inner
                 in content
               ) (Array.toList state.instrs)
           )
       ]
-    rows = progStates |> List.map renderRow
+    rows = states |> List.map renderRow
     tableHead = tr [] [
-        th [] [text "Reg A"],
-        th [] [text "Reg B"],
-        th [] [text "Reg C"],
+        th [] [text "Register A"],
+        th [] [text "Register B"],
+        th [] [text "Register C"],
         th [] [text "Program"]
       ] 
   in
