@@ -5,15 +5,14 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Array
-import Unwrap
 import Bitwise
 
 main : Program () Model Msg
 main =
   Browser.sandbox { 
     init = init, 
-    update = update, 
-    view = view 
+    view = view,
+    update = update
   }
   
 type alias Model =
@@ -25,9 +24,9 @@ type alias Model =
   }
 
 init : Model 
-init = { input = "", output1 = "", output2 = "", trace = []}
+init = { input = "", output1 = "", output2 = "", trace = [] }
 
-type Instr = Adv | Bxl | Bst | Jnz | Bxc | Out | Bdv | Cdv | Noop
+type Instr = Adv | Bxl | Bst | Jnz | Bxc | Out | Bdv | Cdv
 
 type alias ProgramState = {
     a: Int,
@@ -38,33 +37,68 @@ type alias ProgramState = {
     console: List Int
   }
 
--- parsing error handling is kind of bad :(
+maybeListMap : (a -> Maybe b) -> List a -> Maybe (List b)
+maybeListMap f l =
+  List.foldr (\x acc -> case (f x, acc) of
+    (Just fx, Just fxs) -> Just (fx :: fxs)
+    (Nothing, _) -> Nothing
+    (_, Nothing) -> Nothing
+  ) (Just []) l
+
+unnestMaybe : Maybe (Maybe a) -> Maybe a
+unnestMaybe mma = 
+  case mma of 
+    Just ma -> ma
+    Nothing -> Nothing
+
+parseInitValue : String -> Maybe Int
+parseInitValue line =
+  String.split ":" line
+    |> Array.fromList
+    |> Array.get 1
+    |> Maybe.map String.trim
+    |> Maybe.andThen String.toInt
+
+opcodeToInstr : Int -> Maybe Instr
+opcodeToInstr opCode =
+  case opCode of
+    0 -> Just Adv
+    1 -> Just Bxl
+    2 -> Just Bst
+    3 -> Just Jnz
+    4 -> Just Bxc
+    5 -> Just Out
+    6 -> Just Bdv
+    7 -> Just Cdv
+    _ -> Nothing
+
+parseInstructions : String -> Maybe (Array.Array Instr)
+parseInstructions lineProg =
+  String.split ":" lineProg
+    |> Array.fromList
+    |> Array.get 1
+    |> Maybe.map String.trim
+    |> Maybe.map (String.split ",")
+    |> Maybe.map (maybeListMap String.toInt)
+    |> unnestMaybe
+    |> Maybe.map (maybeListMap opcodeToInstr)
+    |> unnestMaybe
+    |> Maybe.map Array.fromList
+
 parseInput : String -> Result String ProgramState
-parseInput input_str = 
-  case String.split "\n" input_str of 
+parseInput inputStr =
+  case String.split "\n" inputStr of
     lineA :: lineB :: lineC :: _ :: lineProg :: _ -> 
-      let 
-        getInit = String.split ":" >> Array.fromList >> Array.get 1 >> Unwrap.maybe >> String.trim >> String.toInt >> Unwrap.maybe
-      in
-      Ok {
-        a = getInit lineA,
-        b = getInit lineB,
-        c = getInit lineC,
-        instrs = String.split ":" lineProg |> Array.fromList |> Array.get 1 |> Unwrap.maybe |> String.trim |> String.split "," |> List.map (String.toInt >> Unwrap.maybe) |> List.map (\opCode -> case opCode of
-          0 -> Adv
-          1 -> Bxl
-          2 -> Bst
-          3 -> Jnz
-          4 -> Bxc
-          5 -> Out
-          6 -> Bdv
-          7 -> Cdv
-          _ -> Noop -- unreachable
-        ) |> Array.fromList,
-        counter = 0,
-        console = []
-      }
-    _ -> Err "cannot parse"
+      Maybe.map4 ProgramState
+        (parseInitValue lineA)
+        (parseInitValue lineB)
+        (parseInitValue lineC)
+        (parseInstructions lineProg)
+      |> Maybe.andThen (\x -> Just (x 0))
+      |> Maybe.andThen (\x -> Just (x []))
+      |> Result.fromMaybe "failed to parse input"
+    _ ->
+      Err "failed to parse input"
 
 literalOperand : Instr -> Int
 literalOperand instr = case instr of 
@@ -76,7 +110,6 @@ literalOperand instr = case instr of
   Out -> 5
   Bdv -> 6
   Cdv -> 7
-  Noop -> 8 -- unreachable
 
 comboOperand : Instr -> ProgramState -> Int
 comboOperand instr state = case instr of 
@@ -88,34 +121,40 @@ comboOperand instr state = case instr of
   Out -> state.b
   Bdv -> state.c
   Cdv -> -1 -- unreachable
-  Noop -> -1 -- unreachable
 
 stepProgram : ProgramState -> Maybe ProgramState
-stepProgram state = 
-  case (Array.get state.counter state.instrs, Array.get (state.counter + 1) state.instrs) of 
+stepProgram stateOrig = 
+  case (Array.get stateOrig.counter stateOrig.instrs, Array.get (stateOrig.counter + 1) stateOrig.instrs) of 
     (Just instr, Just operand) -> 
+      let state = { stateOrig | counter = stateOrig.counter + 2 } in 
       case instr of 
-        Noop -> Just { state | counter = state.counter + 2 }
-        Adv -> Just { state | counter = state.counter + 2, a = (state.a // (2 ^ comboOperand operand state))}
-        Bxl -> Just { state | counter = state.counter + 2, b = Bitwise.xor state.b (literalOperand operand)}
-        Bst -> Just { state | counter = state.counter + 2, b = modBy 8 (comboOperand operand state)}
-        Jnz -> Just { state | counter = if state.a /= 0 then (literalOperand operand) else state.counter + 2}
-        Bxc -> Just { state | counter = state.counter + 2, b = Bitwise.xor state.b state.c}
-        Out -> Just { state | counter = state.counter + 2, console = (modBy 8 (comboOperand operand state))::state.console}
-        Bdv -> Just { state | counter = state.counter + 2, b = (state.a // (2 ^ comboOperand operand state))}
-        Cdv -> Just { state | counter = state.counter + 2, c = (state.a // (2 ^ comboOperand operand state))}
+        -- Noop -> Just state
+        Adv -> Just { state | a = (state.a // (2 ^ comboOperand operand state))}
+        Bxl -> Just { state | b = Bitwise.xor state.b (literalOperand operand)}
+        Bst -> Just { state | b = modBy 8 (comboOperand operand state)}
+        Jnz -> Just (if state.a /= 0 then { state | counter = literalOperand operand } else state)
+        Bxc -> Just { state | b = Bitwise.xor state.b state.c}
+        Out -> Just { state | console = (modBy 8 (comboOperand operand state))::state.console}
+        Bdv -> Just { state | b = (state.a // (2 ^ comboOperand operand state))}
+        Cdv -> Just { state | c = (state.a // (2 ^ comboOperand operand state))}
     _ -> Nothing
 
-computePart1 : ProgramState -> (List Int, List ProgramState)
-computePart1 state = case stepProgram state of 
+traceProgram : ProgramState -> (List Int, List ProgramState)
+traceProgram state = case stepProgram state of 
   Nothing -> (List.reverse state.console, [state])
   Just stateNew -> 
     let
       _ = Debug.log "|->" stateNew
-      (console, states) = computePart1 stateNew
+      (console, states) = traceProgram stateNew
     in 
       (console, state :: states)
 
+runProgram : ProgramState -> Int -> List Int
+runProgram state maxSteps = 
+  if maxSteps == 0 then [] else 
+  case stepProgram state of 
+    Nothing -> (List.reverse state.console)
+    Just stateNew -> runProgram stateNew (maxSteps - 1)
 
 type Msg 
   = SolvePart1 
@@ -127,13 +166,14 @@ update msg model =
   case msg of
     Input s -> { model | input = s }
     SolvePart1 -> 
-      let 
-        program = parseInput model.input
-        _ = Debug.log "program" program
-        (consoleOutput, trace) = Debug.log "program |->*" (computePart1 (Unwrap.result program))
-      in
-        { model | output1 = String.join "," (List.map String.fromInt consoleOutput), trace = trace }
-    SolvePart2 -> { model | output2 = "part 2 solution not implemented" }
+      case parseInput model.input of 
+        Err e -> { model | output1 = e }
+        Ok program -> let (consoleOutput, trace) = Debug.log "program |->*" (traceProgram program) in
+          { model | output1 = String.join "," (List.map String.fromInt consoleOutput), trace = trace }
+    SolvePart2 -> 
+      case parseInput model.input of 
+        Err e -> { model | output2 = e }
+        Ok _ -> { model | output2 = "somehow my elm implementation overflows for part 2 T^T, but this can actually be solved by hand :)"}
 
 renderTrace : List ProgramState -> Html msg
 renderTrace states = 
