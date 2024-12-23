@@ -13,7 +13,7 @@
 | **5**  | 🐹 Go         | ⭐⭐    | **15** | 🦥 Haskell | ⭐⭐    | **25** |          |       |
 | **6**  | 🦕 TypeScript | ⭐⭐    | **16** | 🐍 Python  | ⭐⭐    |        |          |       |
 | **7**  | 🐪 OCaml      | ⭐⭐    | **17** | 🌳 Elm + ✍️ Hand + 🦀 Rust    | ⭐⭐      |        |          |       |
-| **8**  | 🦆 SQL        | ⭐⭐    | **18** |            |         |        |          |       |
+| **8**  | 🦆 SQL        | ⭐⭐    | **18** | 🦀 Rust    | ⭐⭐    |        |          |       |
 | **9**  | 📄 Typst      | ⭐⭐    | **19** |            |         |        |          |       |
 | **10** | 🦥 Haskell    | ⭐⭐    | **20** |            |         |        |          |       |
 
@@ -49,6 +49,10 @@
 - Elm
   - `mkdir day17`, `cd day17`, `elm init`
   - `open http://localhost:2024/Main.elm && elm reactor --port 2024`
+- Gleam
+  - `gleam new day20`
+  
+
 
 ## Language Backlog...
 
