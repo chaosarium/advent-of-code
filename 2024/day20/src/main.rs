@@ -16,6 +16,7 @@ fn nbors(coord: (usize, usize), map: &Vec<Vec<MapObject>>) -> Vec<(usize, usize)
     res
 }
 
+#[deprecated] // part 1 only
 fn locs_at_cheat_end(coord: (usize, usize), map: &Vec<Vec<MapObject>>) -> Vec<((usize, usize), usize)> {
     let i = coord.0 as i64;
     let j = coord.1 as i64;
@@ -33,7 +34,6 @@ fn locs_at_cheat_end(coord: (usize, usize), map: &Vec<Vec<MapObject>>) -> Vec<((
         .map(|((ii, jj), jump_cost)| ((ii as usize, jj as usize), jump_cost))
         .collect();
     res
-
 }
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -101,7 +101,7 @@ fn manhattan_dist((i1, j1): (usize, usize), (i2, j2): (usize, usize)) -> usize {
     (usize::max(i1, i2) - usize::min(i1, i2)) + (usize::max(j1, j2) - usize::min(j1, j2))
 }
 
-fn solve1(file_path: &str) -> usize {
+fn solve_both(file_path: &str, max_cheat_duration: i64) -> usize {
     let map = read_map(file_path);
     let end = find_first(&map, MapObject::End);
     let start = find_first(&map, MapObject::Start);
@@ -109,32 +109,42 @@ fn solve1(file_path: &str) -> usize {
     let dists_from_start = bfs(&map, start);
     let dists_from_end = bfs(&map, end);
     let no_cheating_best = dists_from_start.get(&end).unwrap().clone();
+
+    let height = map.len() as i64;
+    let width = map[0].len() as i64;
     
     let mut stats: BTreeMap<usize, usize> = BTreeMap::default();
-    for (i, row) in map.iter().enumerate() {
-        for (j, cell) in row.iter().enumerate() {
-            let u = (i, j);
+    for (iu, row) in map.iter().enumerate() {
+        for (ju, cell) in row.iter().enumerate() {
+            let u = (iu, ju);
             if cell != &MapObject::Wall {
-                for (v@(iv, jv), _) in locs_at_cheat_end(u, &map) {
-                    
-                    // activate cheat at u and end at v
-                    //     v
-                    //   v 1 v
-                    // v 1 u 1 v
-                    //   v 1 v
-                    //     v
-                    
-                    match dists_from_end.get(&v) {
-                        None => {},
-                        Some (u_to_end) => {
-                            let new_dist = dists_from_start.get(&u).unwrap() + dists_from_end.get(&v).unwrap() + manhattan_dist(u, v);
-                            if new_dist < no_cheating_best {
-                                let time_saved = no_cheating_best - new_dist;
-                                *stats.entry(time_saved).or_insert(0) += 1;
+                
+                // activate cheat at u lets us reach v at up to dist max_cheat_duration away from u
+                //     v
+                //   v 1 v
+                // v 1 u 1 v
+                //   v 1 v
+                //     v
+
+                let iu = iu as i64;
+                let ju = ju as i64;
+                for iv in (iu-max_cheat_duration)..=(iu+max_cheat_duration) {
+                    for jv in (ju-max_cheat_duration)..=(ju+max_cheat_duration) {
+                        let v = (iv as usize, jv as usize);
+                        if (iv >= 0 && jv >= 0 && iv < height && jv < width) && manhattan_dist(u, v) <= max_cheat_duration as usize {                        
+                            match dists_from_end.get(&v) {
+                                None => {},
+                                Some (u_to_end) => {
+                                    let new_dist = dists_from_start.get(&u).unwrap() + dists_from_end.get(&v).unwrap() + manhattan_dist(u, v);
+                                    if new_dist < no_cheating_best {
+                                        let time_saved = no_cheating_best - new_dist;
+                                        *stats.entry(time_saved).or_insert(0) += 1;
+                                    }
+                                }
                             }
                         }
                     }
-                }
+                }                   
             }
         }
     };
@@ -146,6 +156,8 @@ fn solve1(file_path: &str) -> usize {
 
 
 fn main() {
-    println!("p1 test: {}", solve1("test.txt"));
-    println!("p1 real: {}", solve1("input.txt"));
+    println!("p1 test: {}", solve_both("test.txt", 2));
+    println!("p1 real: {}", solve_both("input.txt", 2));
+    println!("p2 test: {}", solve_both("test.txt", 20));
+    println!("p2 real: {}", solve_both("input.txt", 20));
 }
